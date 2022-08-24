@@ -1,11 +1,10 @@
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -13,7 +12,6 @@ public class Loading {
 
     public static final String PATH_TO_SAVES = Installation.getPathToSaves();
     public static final String PATH_TO_ZIP = Saving.getPathToZip();
-    public static List<String> unzippedSaves = new ArrayList<>();
     public static final DateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
 
     public static void main(String[] args) {
@@ -40,7 +38,6 @@ public class Loading {
                 for (int b = unzipper.read(); b != -1; b = unzipper.read()) {
                     unzippedSave.write(b);
                 }
-                unzippedSaves.add(fileName); // добавляем разархивированный файл в локальную коллекцию
                 unzippedSave.flush(); // очищаем буфер
                 unzipper.closeEntry(); // закрываем запись
                 unzippedSave.close(); // закрываем поток вывода
@@ -53,21 +50,22 @@ public class Loading {
     }
 
     public static void openProgress() {
-        // проходим по нашей коллекции разархивированных файлов
-        unzippedSaves.forEach(path -> {
-            GameProgress gameProgress;
+        File[] savegames = new File(PATH_TO_SAVES).listFiles();
+        Arrays.stream(Objects.requireNonNull(savegames))
+                .filter(file -> file.getName().contains(".dat"))
+                .forEach(file -> {
+                    GameProgress gameProgress;
 
-            // создаем входной поток из разархивированного файла и оборачиваем его в десериализатор
-            try (ObjectInputStream deserializer = new ObjectInputStream(
-                    new FileInputStream(path))) {
+                    // создаем входной поток из разархивированного файла и оборачиваем его в десериализатор
+                    try (ObjectInputStream deserializer = new ObjectInputStream(
+                            new FileInputStream(file))) {
 
-                // читаем полученный файл как объект и кастим его в тип GameProgress
-                gameProgress = (GameProgress) deserializer.readObject();
-                System.out.println(gameProgress);
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
-        });
-
+                        // читаем полученный файл как объект и кастим его в тип GameProgress
+                        gameProgress = (GameProgress) deserializer.readObject();
+                        System.out.println(gameProgress);
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+                });
     }
 }

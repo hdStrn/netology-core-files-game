@@ -4,9 +4,7 @@ import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -14,7 +12,6 @@ public class Saving {
 
     // путь к папке с сохранениями берем из предыдущего задания
     public static final String PATH_TO_SAVES = Installation.getPathToSaves();
-    public static List<String> savedGames = new ArrayList<>();
     public static final DateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss");
 
     public static void main(String[] args) {
@@ -28,9 +25,8 @@ public class Saving {
         for (int i = 0; i < getGames().size(); i++) {
             String fileName = PATH_TO_SAVES + "save" + (i + 1) + ".dat"; // генерация полного пути файла сохранения
             try (ObjectOutputStream serializer = new ObjectOutputStream(
-                         new FileOutputStream(fileName))) {
+                    new FileOutputStream(fileName))) {
                 serializer.writeObject(games.get(i)); // записываем в файл состояние нашего объекта GameProgress
-                savedGames.add(fileName); // заполняем список с файлами сохранений
                 System.out.printf("%s - прогресс успешно сохранен в файл %s\n",
                         DATE_FORMAT.format(new Date()), fileName);
             } catch (Exception e) {
@@ -42,7 +38,7 @@ public class Saving {
     public static void zipGames() {
         String archiveName = "zippedSaves.zip";
         try (ZipOutputStream zipper = new ZipOutputStream(
-                     new FileOutputStream(PATH_TO_SAVES + archiveName))) {
+                new FileOutputStream(PATH_TO_SAVES + archiveName))) {
             for (int i = 0; i < getGames().size(); i++) {
                 String fileName = "save" + (i + 1) + ".dat"; // имя файла
                 FileInputStream save = new FileInputStream(PATH_TO_SAVES + fileName); // поток из нашего файла
@@ -54,7 +50,7 @@ public class Saving {
                 zipper.closeEntry(); // закрываем запись в архиве
                 save.close(); // закрывает входной поток из файла
                 System.out.printf("%s - файл %s успешно добавлен в архив %s\n",
-                        DATE_FORMAT.format(new Date()), PATH_TO_SAVES + fileName, archiveName);
+                        DATE_FORMAT.format(new Date()), fileName, archiveName);
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -62,12 +58,15 @@ public class Saving {
     }
 
     public static void removeNotZippedSaves() {
-        savedGames.forEach(path -> {
-            new File(path).delete();
-            System.out.printf("%s - файл %s успешно удален\n",
-                    DATE_FORMAT.format(new Date()), path);
-        });
-        savedGames.clear();
+        File[] savegames = new File(PATH_TO_SAVES).listFiles();
+        Arrays.stream(Objects.requireNonNull(savegames))
+                .filter(file -> file.getName().contains(".dat"))
+                .forEach(file -> {
+                    if (file.delete()) {
+                        System.out.printf("%s - файл %s успешно удален\n",
+                                DATE_FORMAT.format(new Date()), file.getName());
+                    }
+                });
     }
 
     public static List<GameProgress> getGames() {
